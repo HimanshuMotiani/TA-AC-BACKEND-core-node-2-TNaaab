@@ -7,6 +7,9 @@ var userDir = __dirname + "/users/"
 
 function handleRequest(req, res) {
     store = "";
+    let parsedUrl = url.parse(req.url, true)
+    var fileName = parsedUrl.query.username + ".json";
+
     req.on("data", (chunk) => {
         store += chunk
     })
@@ -29,14 +32,14 @@ function handleRequest(req, res) {
                 });
             });
         }
-        let parsedUrl = url.parse(req.url, true)
-        var fileName = parsedUrl.query.username + ".json";
+        
         if (req.method == "GET" && parsedUrl.pathname == "/users") {
             fs.readFile(`./users/${fileName}`, ((err, content) => {
                 res.write(content)
                 res.end();
             }));
         }
+
         if (req.method == "DELETE" && parsedUrl.pathname == "/users") {
             fs.unlink(`./users/${fileName}`, ((err) => {
                 if (err) console.log(err);
@@ -45,13 +48,19 @@ function handleRequest(req, res) {
                 }
             }));
         }
-        if(req.method == "PUT" && parsedUrl.pathname == "/users"){
-            console.log("aa");
-            fs.open(userDir + fileName,"r+",(err,fd)=>{
-                fs.ftruncate(fd);
-                fs.writeFile(fd, store, (err) => {
 
-            })
+        if(req.method == "PUT" && parsedUrl.pathname == "/users"){
+            fs.open(userDir+fileName,"r+",(err,fd)=>{
+                if(err) return console.log(err);
+                fs.ftruncate(fd,err=>{
+                    if(err) return console.log(err)
+                    fs.writeFile(fd, store, (err) => {
+                        if(err) return console.log(err);
+                        fs.close(fd,()=>{
+                            res.end(`updated successfully`)
+                        })
+                    })
+                });  
         })
     }
     })
